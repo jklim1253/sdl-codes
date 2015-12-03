@@ -229,3 +229,7 @@ _Pvt_Extensions
 
 # FAKE - F# Make
 .fake/
+
+# visualstduio 2015 prebuilt library
+!/lib
+!/lib/*
