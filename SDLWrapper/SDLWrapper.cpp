@@ -4,11 +4,32 @@ namespace SDL {
 ////////////////////////////////////////////////////////////
 // Error class implementation
 ////////////////////////////////////////////////////////////
-Error::Error() : exception(), msg(::SDL_GetError()) {}
-Error::Error(const std::string& m) : exception(), msg(m) {}
-Error::~Error() throw() {}
+class ErrorImpl {
+public :
+	ErrorImpl(const std::string& m) : msg(m) {}
+	~ErrorImpl() {}
+	operator const char* () {
+		return msg.c_str();
+	}
+private :
+	std::string msg;
+};
+Error::Error() 
+: exception(), impl(nullptr) {
+	impl = new ErrorImpl(::SDL_GetError());
+}
+Error::Error(const std::string& m)
+: exception(), impl(nullptr) {
+	impl = new ErrorImpl(m);
+}
+Error::~Error() throw() {
+	if (impl)
+		delete impl;
+}
 const char* Error::what() const throw() {
-	return msg.c_str();
+	if (impl)
+		return *impl;
+	return nullptr;
 }
 
 ////////////////////////////////////////////////////////////
@@ -25,9 +46,9 @@ Library::~Library() {
 ////////////////////////////////////////////////////////////
 // Window class implementation
 ////////////////////////////////////////////////////////////
-Window::Window(const std::string& title, int x, int y, int w, int h, Uint32 flags) throw(Error)
+Window::Window(const char* title, int x, int y, int w, int h, Uint32 flags) throw(Error)
 : window(nullptr) {
-	if ((window = ::SDL_CreateWindow(title.c_str(), x, y, w, h, flags)) == nullptr)
+	if ((window = ::SDL_CreateWindow(title, x, y, w, h, flags)) == nullptr)
 		throw Error();
 }
 Window::~Window() {
@@ -36,13 +57,17 @@ Window::~Window() {
 Window::operator SDL_Window* () {
 	return window;
 }
+void Window::fullscreen(Uint32 flag) const throw(Error) {
+	if (!::SDL_SetWindowFullscreen(window, flag))
+		throw Error();
+}
 
 ////////////////////////////////////////////////////////////
 // Image class implementation
 ////////////////////////////////////////////////////////////
-Image::Image(const std::string& file) throw(Error)
+Image::Image(const char* file) throw(Error)
 : image(nullptr) {
-	if ((image = ::IMG_Load(file.c_str())) == nullptr)
+	if ((image = ::IMG_Load(file)) == nullptr)
 		throw Error();
 }
 Image::~Image() {
